@@ -1,0 +1,9 @@
+# dsh-skin-rotation bundle patch — one inserted row.
+#
+# The Loader imports this package's host half (`lib/index.js`, ESM). The web
+# carrier sees the package's `dsh.client` declaration and serves
+# `lib/client.js` to the browser, which mounts the rotation card inside the
+# 「皮肤」settings page.
+- insert:
+    - id: dsh-skin-rotation
+      name: dsh-skin-rotation

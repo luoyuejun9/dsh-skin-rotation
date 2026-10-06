@@ -1,0 +1,61 @@
+{
+  "name": "dsh-skin-rotation",
+  "version": "1.0.2",
+  "description": "Random skin rotation for DeepSeek Harness: pick a different installed skin on every launch, with an on/off switch inside Settings → Skins.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "skin",
+    "skin-rotation",
+    "theme",
+    "cordis",
+    "plugin"
+  ],
+  "license": "MIT",
+  "author": "luoyuejun9",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luoyuejun9/dsh-skin-rotation.git"
+  },
+  "homepage": "https://github.com/luoyuejun9/dsh-skin-rotation#readme",
+  "bugs": {
+    "url": "https://github.com/luoyuejun9/dsh-skin-rotation/issues"
+  },
+  "engines": {
+    "dsh": ">=0.2.0-rc.2 <0.3.0-0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "pack": "npm pack --pack-destination dist"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-settings-general"
+      ]
+    }
+  }
+}

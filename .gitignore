@@ -1,0 +1,17 @@
+# macOS / editor noise
+.DS_Store
+*.swp
+
+# Build output (release tarballs are attached to GitHub Releases)
+dist/
+
+# Dependencies
+node_modules/
+
+# Local-only material: profile snapshots and machine-specific notes
+tools/profile-backup/
+tools/local-notes.md
+
+# Logs
+*.log
+npm-debug.log*

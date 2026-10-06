@@ -1,0 +1,27 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20', '22', '24']
+    name: node ${{ matrix.node }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      # The package itself has no dependencies. node-semver is installed here
+      # only so the differential range test runs instead of skipping.
+      - name: Install the SemVer test oracle
+        run: npm install --no-save --no-audit --no-fund semver@7
+      - name: Test
+        run: node --test test/

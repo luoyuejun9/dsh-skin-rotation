@@ -112,7 +112,7 @@ HTTP 接口：`GET/POST /api/dsh/skin-rotation`，仅同源，跨站请求直接
 ## 开发
 
 ```sh
-node --test test/                 # 29 个用例
+node --test                       # 29 个用例
 npm pack --pack-destination dist  # 打包发布用的 tarball
 ```
 

@@ -1,7 +1,7 @@
 {
   "name": "dsh-skin-rotation",
   "version": "1.0.2",
-  "description": "Random skin rotation for DeepSeek Harness: pick a different installed skin on every launch, with an on/off switch inside Settings → Skins.",
+  "description": "Random skin rotation for DeepSeek Harness: pick a different installed skin on every launch, with an on/off switch inside Settings \u2192 Skins.",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -43,7 +43,7 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test",
     "pack": "npm pack --pack-destination dist"
   },
   "dsh": {

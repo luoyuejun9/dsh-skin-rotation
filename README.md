@@ -112,7 +112,7 @@ HTTP surface: `GET/POST /api/dsh/skin-rotation` — same-origin only, cross-site
 ## Development
 
 ```sh
-node --test test/                 # 29 tests
+node --test                       # 29 tests
 npm pack --pack-destination dist  # build the release tarball
 ```
 

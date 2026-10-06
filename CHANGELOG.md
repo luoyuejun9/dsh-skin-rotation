@@ -16,6 +16,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `tools/e2e-rotation.sh`, which verifies the skin actually served to the
   browser, not just the plugin's own state.
 
+### Fixed
+
+- `npm test` / CI now use Node's own default test discovery (`node --test`),
+  which finds the suites on Node 20, 22 and 24 alike; the previous `test/`
+  path argument failed on the CI runners.
+
 ### Changed
 
 - The card refetches its state whenever it (re)attaches to the skins page.

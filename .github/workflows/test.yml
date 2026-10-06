@@ -24,4 +24,4 @@ jobs:
       - name: Install the SemVer test oracle
         run: npm install --no-save --no-audit --no-fund semver@7
       - name: Test
-        run: node --test test/
+        run: node --test

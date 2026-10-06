@@ -11,6 +11,7 @@ node_modules/
 # Local-only material: profile snapshots and machine-specific notes
 tools/profile-backup/
 tools/local-notes.md
+tools/git-api-push.mjs
 
 # Logs
 *.log

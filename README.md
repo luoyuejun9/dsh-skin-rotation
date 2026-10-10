@@ -5,6 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT"></a>
+  <a href="https://www.dsh.so/artifact/dsh-skin-rotation/"><img src="https://www.dsh.so/badge/dsh-skin-rotation.svg" alt="dsh.so security: low risk"></a>
   <a href="https://github.com/luoyuejun9/dsh-skin-rotation/actions/workflows/test.yml"><img src="https://github.com/luoyuejun9/dsh-skin-rotation/actions/workflows/test.yml/badge.svg" alt="test"></a>
   <a href="https://www.npmjs.com/package/dsh-skin-rotation"><img src="https://img.shields.io/npm/v/dsh-skin-rotation" alt="npm"></a>
   <a href="https://github.com/luoyuejun9/dsh-skin-rotation/stargazers"><img src="https://img.shields.io/github/stars/luoyuejun9/dsh-skin-rotation?style=flat" alt="stars"></a>
@@ -108,6 +109,7 @@ HTTP surface: `GET/POST /api/dsh/skin-rotation` — same-origin only, cross-site
 - At least two installed skins for rotation to mean anything. Skins are read the way the ecosystem defines them: a package shipping a valid `skin.json` (`id`, `package`, `bodyAttr`, `wiring.id`).
 - The card lives inside the [skin manager](https://github.com/Small-tailqwq/dsh-deep-whale)'s Skins page (`settings.section` id `dsh-skins`). Without that manager rotation still works — you drive it through the route instead of a card.
 - No `@deepseek-ai/*` runtime dependency: nothing to resolve, nothing to build, no install-time scripts.
+- Independently indexed by [dsh.so](https://www.dsh.so/artifact/dsh-skin-rotation/): security audit done (low risk), `L5` install verification — run tested on dsh `0.2.0-rc.2`.
 
 ## Development
 

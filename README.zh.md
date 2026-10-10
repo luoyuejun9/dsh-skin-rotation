@@ -5,6 +5,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT"></a>
+  <a href="https://www.dsh.so/artifact/dsh-skin-rotation/"><img src="https://www.dsh.so/badge/dsh-skin-rotation.svg" alt="dsh.so 安全评级：低风险"></a>
   <a href="https://github.com/luoyuejun9/dsh-skin-rotation/actions/workflows/test.yml"><img src="https://github.com/luoyuejun9/dsh-skin-rotation/actions/workflows/test.yml/badge.svg" alt="test"></a>
   <a href="https://www.npmjs.com/package/dsh-skin-rotation"><img src="https://img.shields.io/npm/v/dsh-skin-rotation" alt="npm"></a>
   <a href="https://github.com/luoyuejun9/dsh-skin-rotation/stargazers"><img src="https://img.shields.io/github/stars/luoyuejun9/dsh-skin-rotation?style=flat" alt="stars"></a>
@@ -108,6 +109,7 @@ HTTP 接口：`GET/POST /api/dsh/skin-rotation`，仅同源，跨站请求直接
 - 至少装两个皮肤轮换才有意义。皮肤的判定沿用生态约定：包内带合法 `skin.json`（`id`、`package`、`bodyAttr`、`wiring.id`）。
 - 卡片挂在[皮肤管理器](https://github.com/Small-tailqwq/dsh-deep-whale)的皮肤页（`settings.section` id `dsh-skins`）里；没有管理器时轮换依然工作，只是改用路由开关。
 - 不依赖任何 `@deepseek-ai/*` 运行时包：无需解析、无需构建、安装时不执行任何脚本。
+- 已被 [dsh.so](https://www.dsh.so/artifact/dsh-skin-rotation/) 独立收录：安全审计通过（低风险），安装验证 `L5`（已在 dsh `0.2.0-rc.2` 上实机跑通）。
 
 ## 开发
 

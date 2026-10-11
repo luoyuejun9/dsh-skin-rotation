@@ -111,18 +111,85 @@ test('cross-site requests are rejected for reads and writes alike', async () => 
   }
 });
 
-test('a POST with an unverifiable Origin is refused', async () => {
+test('an opaque or absent Origin is accepted, so the desktop shell can write', async () => {
   const root = mkdtempSync(join(tmpdir(), 'skin-route-'));
   try {
     const context = makeContext(root);
     const route = makeSkinRotationRoute(context);
-    for (const headers of [{}, { origin: 'null', host: '127.0.0.1:19387' }, { origin: 'http://evil.example', host: '127.0.0.1:19387' }]) {
-      const { status } = await call(route, { method: 'POST', headers, body: { action: 'set-enabled', enabled: false } });
-      assert.equal(status, 403, `expected 403 for headers ${JSON.stringify(headers)}`);
+    // The desktop shell serves its page from an opaque origin and therefore
+    // sends `Origin: null` on POST; a missing Origin is what curl/CLI sends.
+    const cases = [
+      { origin: 'null', host: '127.0.0.1:19387' },
+      { host: '127.0.0.1:19387' },
+      { origin: 'null', host: '127.0.0.1:19387', 'sec-fetch-site': 'same-origin' },
+    ];
+    for (const headers of cases) {
+      const { status, body } = await call(route, { method: 'POST', headers, body: { action: 'set-enabled', enabled: false } });
+      assert.equal(status, 200, `expected 200 for headers ${JSON.stringify(headers)}, got ${status} ${JSON.stringify(body)}`);
     }
-    // A missing Origin is still fine for reads (curl, health checks).
     const read = await call(route, { method: 'GET', headers: {} });
     assert.equal(read.status, 200);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a genuine cross-site request is refused for reads and writes alike', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'skin-route-'));
+  try {
+    const context = makeContext(root);
+    const route = makeSkinRotationRoute(context);
+    // `Sec-Fetch-Site: cross-site` is browser-set and cannot be forged by the
+    // page, so it stays the primary refusal even when Origin looks harmless.
+    for (const headers of [
+      { 'sec-fetch-site': 'cross-site', origin: 'http://127.0.0.1:19387', host: '127.0.0.1:19387' },
+      { 'sec-fetch-site': 'cross-site', origin: 'null', host: '127.0.0.1:19387' },
+    ]) {
+      const write = await call(route, { method: 'POST', headers, body: { action: 'set-enabled', enabled: false } });
+      assert.equal(write.status, 403, `POST should be refused for ${JSON.stringify(headers)}`);
+      assert.equal(write.body.error, 'cross-site-request-rejected');
+      const read = await call(route, { method: 'GET', headers });
+      assert.equal(read.status, 403, `GET should be refused for ${JSON.stringify(headers)}`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('a foreign Origin is refused when the browser does not attest a same-site request', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'skin-route-'));
+  try {
+    const context = makeContext(root);
+    const route = makeSkinRotationRoute(context);
+    const foreign = await call(route, {
+      method: 'POST',
+      headers: { origin: 'http://evil.example', host: '127.0.0.1:19387' },
+      body: { action: 'set-enabled', enabled: false },
+    });
+    assert.equal(foreign.status, 403);
+    assert.equal(foreign.body.error, 'origin-mismatch');
+    // The refusal is recorded for diagnosis without leaking headers to the page.
+    const { body } = await call(route, { method: 'GET', headers: {} });
+    assert.equal(body.lastRejection.reason, 'origin-mismatch');
+    assert.equal(body.lastRejection.hadOrigin, true);
+    assert.equal(JSON.stringify(body.lastRejection).includes('evil'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('the same machine spelled differently (localhost vs 127.0.0.1) is accepted', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'skin-route-'));
+  try {
+    const context = makeContext(root);
+    const route = makeSkinRotationRoute(context);
+    const { status, body } = await call(route, {
+      method: 'POST',
+      headers: { origin: 'http://localhost:19387', host: '127.0.0.1:19387' },
+      body: { action: 'set-enabled', enabled: false },
+    });
+    assert.equal(status, 200, `expected the loopback alias to pass, got ${status} ${JSON.stringify(body)}`);
+    assert.equal(body.enabled, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

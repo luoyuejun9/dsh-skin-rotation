@@ -1,6 +1,6 @@
 {
   "name": "dsh-skin-rotation",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Smart skin rotation for DeepSeek Harness: random, sequential, weighted or fixed policies, a per-skin pool, rotation history and crash-safe config writes \u2014 local-first and recoverable.",
   "keywords": [
     "dsh",

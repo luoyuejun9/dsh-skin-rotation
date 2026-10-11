@@ -4,6 +4,33 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] — 2026-10-11
+
+### Fixed
+
+- **Every change in the settings card failed on the desktop app** with
+  `cross-site-request-rejected`. 2.0.0 required a verifiable `Origin` on `POST`,
+  but the desktop shell serves the settings page from an **opaque origin**, so
+  its writes arrive with `Origin: null` and were refused while reads kept
+  working — the card showed a state it could never edit. The guard now rejects
+  only what the browser itself marks as cross-site (`Sec-Fetch-Site:
+  cross-site`, which page script cannot forge), which is also the rule the skin
+  manager uses.
+- `localhost` and `127.0.0.1` are now treated as the same machine instead of a
+  cross-origin mismatch.
+
+### Added
+
+- A refusal records the reason code (and whether an `Origin` was present) and
+  exposes it as `lastRejection` in the state payload, so a future origin problem
+  is diagnosable from one request instead of a reproduction session.
+
+### Testing
+
+- Three route tests pin the new contract: opaque/absent `Origin` accepted,
+  `Sec-Fetch-Site: cross-site` refused for reads and writes, a foreign `Origin`
+  refused with `origin-mismatch`, and the loopback alias accepted.
+
 ## [2.0.0] — 2026-10-11
 
 The release that turns a random-pick plugin into a configurable, inspectable
@@ -123,6 +150,7 @@ automatically; the patch format and the on-disk managed block do not change.
 - Preference route `GET/POST /api/dsh/skin-rotation`, same-origin only.
 - 29 tests, including a differential SemVer test against node-semver.
 
+[2.0.1]: https://github.com/luoyuejun9/dsh-skin-rotation/releases/tag/v2.0.1
 [2.0.0]: https://github.com/luoyuejun9/dsh-skin-rotation/releases/tag/v2.0.0
 [1.0.2]: https://github.com/luoyuejun9/dsh-skin-rotation/releases/tag/v1.0.2
 [1.0.0]: https://github.com/luoyuejun9/dsh-skin-rotation/releases/tag/v1.0.0

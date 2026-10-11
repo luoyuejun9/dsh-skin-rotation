@@ -48,6 +48,8 @@ function payload(overrides = {}) {
     ok: true,
     enabled: true,
     bootId: 'boot-1',
+    mode: 'random',
+    recentRule: 'recent-2',
     pickedThisBoot: 'orca-link',
     lastPicked: 'orca-link',
     lastRotatedAt: 1,
@@ -56,12 +58,17 @@ function payload(overrides = {}) {
     pickedBodyAttr: 'data-dsh-orca-link',
     catalogSize: 2,
     poolSize: 2,
-    route: '/api/dsh/skin-rotation',
-    stateFile: '/tmp/profile/.dsh-skin-rotation.json',
+    fixedSkin: null,
+    sequentialIndex: 0,
     lastClientReport: null,
+    history: [
+      { at: '2026-10-11T09:00:00.000Z', from: 'official', to: 'orca-link', trigger: 'startup', mode: 'random', ok: true, reason: null },
+      { at: '2026-10-11T08:00:00.000Z', from: 'orca-link', to: null, trigger: 'manual', mode: 'random', ok: false, reason: 'empty-pool' },
+    ],
     skins: [
-      { id: 'orca-link', name: '虎鲸链路', nameEn: 'ORCA LINK', bodyAttr: 'data-dsh-orca-link', package: 'pkg-orca', active: true, admissible: true, incompatible: null },
-      { id: 'maid-atelier', name: '深海女仆工坊', nameEn: 'Abyssal Maid Atelier', bodyAttr: 'data-dsh-maid-atelier', package: 'pkg-maid', active: false, admissible: false, incompatible: { runtimeVersion: '0.2.0-rc.2', peers: { x: '1' } } },
+      { id: 'orca-link', name: '虎鲸链路', nameEn: 'ORCA LINK', bodyAttr: 'data-dsh-orca-link', active: true, inPool: true, status: 'compatible', reason: null, weight: 3, lastUsedAt: '2026-10-11T09:00:00.000Z' },
+      { id: 'maid-atelier', name: '深海女仆工坊', nameEn: 'Abyssal Maid Atelier', bodyAttr: 'data-dsh-maid-atelier', active: false, inPool: false, status: 'excluded', reason: 'excluded-by-user', weight: null, lastUsedAt: null },
+      { id: 'deny-skin', name: '不兼容皮肤', nameEn: 'Denied', bodyAttr: 'data-deny', active: false, inPool: false, status: 'incompatible', reason: 'incompatible', weight: null, lastUsedAt: null },
     ],
     ...overrides,
   };
@@ -86,30 +93,50 @@ test('client bundle registers an apply/inject plugin', async () => {
   assert.equal(typeof exports.__internals.Card, 'function');
 });
 
-test('card renders the switch, the actions and the skin list', async () => {
+test('card renders the switch, the mode selector, the pool rows and the history', async () => {
   const { exports } = await loadClient();
+  const handlers = {
+    onToggle() {}, onShuffle() {}, onRestore() {}, onRefresh() {}, onRendered() {},
+    onMode() {}, onRecentRule() {}, onToggleSkin() {}, onSetWeight() {}, onReset() {},
+  };
   const rendered = exports.__internals.Card({
     state: { data: payload(), error: null, busy: false },
     t: exports.__internals.TEXT.zh,
     language: 'zh-cn',
-    onToggle() {},
-    onShuffle() {},
-    onRefresh() {},
-    onRendered() {},
+    ...handlers,
   });
   const elements = flatten(rendered);
   const byRole = elements.filter((element) => element.props.role === 'switch');
   assert.equal(byRole.length, 1);
   assert.equal(byRole[0].props['aria-checked'], 'true');
+
+  // Two selects: rotation mode and recent-repeat rule.
+  const selects = elements.filter((element) => element.type === 'select');
+  assert.equal(selects.length, 2);
+  const optionValues = (select) => flatten(select.children).filter((e) => e.type === 'option').map((e) => e.props.value);
+  assert.deepEqual(optionValues(selects[0]), ['random', 'sequential', 'weighted', 'fixed']);
+  assert.deepEqual(optionValues(selects[1]), ['disabled', 'recent-2', 'recent-3']);
+
+  // One checkbox per skin: pool membership, incompatible disabled.
+  const checkboxes = elements.filter((element) => element.type === 'input' && element.props.type === 'checkbox');
+  assert.equal(checkboxes.length, 3);
+  assert.equal(checkboxes[0].props.checked, true);
+  assert.equal(checkboxes[1].props.checked, false);
+  assert.equal(checkboxes[2].props.disabled, true);
+
+  // Five buttons: the on/off switch, shuffle, restore, refresh, reset.
   const buttons = elements.filter((element) => element.type === 'button');
-  assert.equal(buttons.length, 3);
+  assert.equal(buttons.length, 5);
+
   const list = elements.filter((element) => element.type === 'li');
-  assert.equal(list.length, 2);
+  assert.equal(list.length, 3);
   assert.equal(list[0].props['data-active'], 'true');
   assert.equal(list[1].props['data-active'], 'false');
+
   const text = JSON.stringify(elements.map((element) => element.children));
   assert.match(text, /深海女仆工坊/);
   assert.match(text, /不兼容/);
+  assert.match(text, /最近轮换/);
 });
 
 test('card renders every degenerate state without throwing', async () => {

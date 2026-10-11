@@ -8,24 +8,52 @@
  * remain the contract.
  */
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import { satisfies } from '../lib/semver.js';
 
-const CANDIDATES = [
-  '/Users/louis/.dsh/profiles/node_modules/semver/package.json',
-  '/Users/louis/.dsh/profiles/desktop/node_modules/semver/package.json',
-  '/Users/louis/.local/lib/node_modules/@deepseek-ai/dsh/node_modules/semver/package.json',
-];
+/**
+ * Locate node-semver without hardcoding a machine layout:
+ *   1. `SEMVER_ORACLE_PATH` — an explicit package.json, for unusual set-ups;
+ *   2. whatever this checkout can resolve (CI installs it beside the repo);
+ *   3. the shared profile node_modules under `DSH_HOME` (default `~/.dsh`),
+ *      which is where a DSH installation keeps one.
+ * When none of them resolves, the differential test is skipped and says so.
+ */
+function candidateManifests() {
+  const candidates = [];
+  if (process.env.SEMVER_ORACLE_PATH) candidates.push(process.env.SEMVER_ORACLE_PATH);
+  try {
+    candidates.push(createRequire(import.meta.url).resolve('semver/package.json'));
+  } catch {
+    /* not installed next to the checkout */
+  }
+  const home = process.env.DSH_HOME?.trim() || join(homedir(), '.dsh');
+  const profiles = join(home, 'profiles');
+  candidates.push(join(profiles, 'node_modules', 'semver', 'package.json'));
+  const profile = process.env.DSH_PROFILE?.trim();
+  if (profile) candidates.push(join(profiles, profile, 'node_modules', 'semver', 'package.json'));
+  try {
+    for (const name of readdirSync(profiles)) {
+      candidates.push(join(profiles, name, 'node_modules', 'semver', 'package.json'));
+    }
+  } catch {
+    /* no profiles directory */
+  }
+  return candidates;
+}
 
 function loadSemver() {
-  for (const candidate of CANDIDATES) {
+  for (const candidate of candidateManifests()) {
     try {
       const require = createRequire(candidate);
       return require('semver');
     } catch {
-      /* try the next location */
+      /* try the next candidate */
     }
   }
   return null;

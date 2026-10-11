@@ -1,7 +1,7 @@
 {
   "name": "dsh-skin-rotation",
-  "version": "1.0.2",
-  "description": "Random skin rotation for DeepSeek Harness: pick a different installed skin on every launch, with an on/off switch inside Settings \u2192 Skins.",
+  "version": "2.0.0",
+  "description": "Smart skin rotation for DeepSeek Harness: random, sequential, weighted or fixed policies, a per-skin pool, rotation history and crash-safe config writes \u2014 local-first and recoverable.",
   "keywords": [
     "dsh",
     "dsh-plugin",
@@ -9,6 +9,7 @@
     "skin",
     "skin-rotation",
     "theme",
+    "rotation",
     "cordis",
     "plugin"
   ],
@@ -44,6 +45,8 @@
   },
   "scripts": {
     "test": "node --test",
+    "verify:package": "node tools/verify-package.mjs",
+    "check": "node --test && node tools/verify-package.mjs",
     "pack": "npm pack --pack-destination dist"
   },
   "dsh": {

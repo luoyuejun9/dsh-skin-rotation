@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest a rotation rule, a control, or a reliability improvement
+title: "[feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation, not the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: edges
+    attributes:
+      label: Edge cases
+      description: |
+        How should it behave when the candidate pool is empty, when only one
+        skin is usable, and how is the change undone?
+    validations:
+      required: true
+  - type: input
+    id: api
+    attributes:
+      label: Host API (only if needed)
+      description: |
+        If this needs a DSH interface, name it and the version that provides it.
+        Ideas that need an unverified host API belong in the roadmap.
+      placeholder: "-"

@@ -1,0 +1,75 @@
+name: Bug report
+description: Something in the rotation, the card, or the config write went wrong
+title: "[bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please redact your home directory, keys and tokens —
+        `~` is enough for paths.
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DSH version
+      description: Output of `dsh --version`.
+      placeholder: 0.2.0-rc.2
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: From `package.json`, the market row, or the tarball name.
+      placeholder: 2.0.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and Node version, plus desktop app or `dsh web`.
+      placeholder: macOS 15 / Node 24.21 / desktop app
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Set mode to weighted, weight 0 on every skin
+        2. Restart the host
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the host log lines around the failure if you have them.
+    validations:
+      required: true
+  - type: textarea
+    id: state
+    attributes:
+      label: Rotation state (optional)
+      description: |
+        If the card shows something surprising, paste the relevant part of the
+        GET response (Settings → Skins → the card's last known state) or the
+        preference file with any personal path removed. Never paste a token.
+      render: json
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: This is not a security issue (those go through SECURITY.md).
+          required: true
+        - label: I removed personal paths, keys and tokens from the output above.
+          required: true

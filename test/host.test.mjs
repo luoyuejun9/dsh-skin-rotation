@@ -1,13 +1,16 @@
 /**
- * Host-half tests: the managed-block surgery, discovery against the live
- * desktop profile, the random pick, and the two-layer write.
+ * Host-half tests: the managed-block surgery, skin discovery, the rotation
+ * policies, the journaled write, migration, and history — all against
+ * throwaway fixture profiles, never the developer's real DSH_HOME. The live
+ * desktop profile is exercised only as an explicitly opt-in integration test
+ * (DSH_LIVE_PROFILE=1), and it is read-only.
  *
- * Run with: node --test test/
+ * Run with: node --test
  */
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -34,7 +37,9 @@ import {
   patchTargetsForProfile,
 } from '../lib/index.js';
 
-const REAL_PROFILE_PATCH = '/Users/louis/.dsh/profiles/desktop/cordis.patch.yml';
+/** Live-profile tests run only when an explicit profile patch is opted into. */
+const REAL_PROFILE_PATCH = process.env.DSH_LIVE_PROFILE_PATCH ?? '';
+const LIVE = process.env.DSH_LIVE_PROFILE === '1' && REAL_PROFILE_PATCH !== '';
 
 const CATALOG = [
   { id: 'alpha', name: 'Alpha', wiringId: 'ui-skin-alpha', package: 'pkg-alpha', bodyAttr: 'data-alpha', order: 1 },
@@ -142,11 +147,7 @@ test('catalogEntry rejects manifests that are not skins', () => {
   assert.equal(good.wiringId, 'ui-skin-x');
 });
 
-test('discovery finds the four installed skins of the live desktop profile', (t) => {
-  if (!existsSync(REAL_PROFILE_PATCH)) {
-    t.skip('desktop profile not present');
-    return;
-  }
+test('discovery finds the four installed skins of the live desktop profile', { skip: !LIVE || !existsSync(REAL_PROFILE_PATCH) }, () => {
   const catalog = discoverInstalledSkins(REAL_PROFILE_PATCH);
   const ids = catalog.map((skin) => skin.id).sort();
   assert.deepEqual(ids, ['deep-whale-day-night', 'maid-atelier', 'maid-whale-webui', 'orca-link']);
@@ -196,16 +197,22 @@ test('useSkin refuses an unknown target and leaves files untouched', () => {
   }
 });
 
-test('state defaults to enabled and round-trips', () => {
+test('state defaults to enabled, round-trips, and migrates legacy files', () => {
   const root = mkdtempSync(join(tmpdir(), 'skin-rotation-'));
   try {
-    assert.deepEqual(readState(root), {
-      enabled: true,
-      lastPicked: null,
-      lastBootId: null,
-      lastRotatedAt: null,
-      lastClientReport: null,
-    });
+    // The v2 default surface: versioned with the new policy fields defaulted.
+    const defaults = readState(root);
+    assert.equal(defaults.schemaVersion, 2);
+    assert.equal(defaults.enabled, true);
+    assert.equal(defaults.mode, 'random');
+    assert.equal(defaults.recentRule, 'recent-2');
+    assert.deepEqual([...defaults.exclude], []);
+    assert.deepEqual(defaults.weights, {});
+    assert.equal(defaults.lastPicked, null);
+    assert.equal(defaults.lastBootId, null);
+    assert.equal(defaults.lastRotatedAt, null);
+    assert.equal(defaults.lastClientReport, null);
+
     writeState(root, { enabled: false, lastPicked: 'alpha', lastBootId: 'b1', lastRotatedAt: 7 });
     assert.equal(readState(root).enabled, false);
     assert.equal(readState(root).lastPicked, 'alpha');
@@ -213,30 +220,39 @@ test('state defaults to enabled and round-trips', () => {
     assert.deepEqual(readState(root).lastClientReport, { at: 5, mounted: true, found: true, rendered: true });
     writeState(root, { enabled: true, lastClientReport: { at: 'nope' } });
     assert.deepEqual(readState(root).lastClientReport, { at: 0, mounted: false, found: false, rendered: false });
+
+    // A corrupt file degrades to defaults, never throws.
     writeFileSync(join(root, '.dsh-skin-rotation.json'), 'not json', 'utf8');
     assert.equal(readState(root).enabled, true);
+
+    // A legacy (schemaVersion 1, pre-policy) document migrates forward.
+    writeFileSync(join(root, '.dsh-skin-rotation.json'), JSON.stringify({
+      enabled: true, lastPicked: 'beta', lastBootId: 'x', lastRotatedAt: 3, lastClientReport: { at: 1 },
+    }), 'utf8');
+    const migrated = readState(root);
+    assert.equal(migrated.schemaVersion, 2);
+    assert.equal(migrated.lastPicked, 'beta');
+    assert.equal(migrated.mode, 'random');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('describeRotation reports the live catalog and picks', (t) => {
-  if (!existsSync(REAL_PROFILE_PATCH)) {
-    t.skip('desktop profile not present');
-    return;
-  }
+test('describeRotation reports the live catalog and picks', { skip: !LIVE || !existsSync(REAL_PROFILE_PATCH) }, () => {
   const patchPaths = patchTargetsForProfile(REAL_PROFILE_PATCH);
+  const profileDir = join(dirname(REAL_PROFILE_PATCH));
   const payload = describeRotation({
     patchPaths,
-    profileDir: '/Users/louis/.dsh/profiles/desktop',
-    state: { enabled: true, lastPicked: 'maid-atelier', lastBootId: 'boot-1', lastRotatedAt: 1 },
+    profileDir,
+    state: readState(profileDir),
     bootId: 'boot-1',
   });
   assert.equal(payload.ok, true);
   assert.equal(payload.skins.length, 4);
   assert.ok(['maid-atelier', 'deep-whale-day-night', 'maid-whale-webui', 'orca-link', 'official'].includes(payload.current));
-  assert.equal(payload.pickedThisBoot, 'maid-atelier');
-  assert.equal(typeof payload.pickedBodyAttr, 'string');
+  assert.equal(typeof payload.currentBodyAttr, 'string');
+  // The payload must not leak absolute local paths to the UI.
+  assert.equal(JSON.stringify(payload).includes(profileDir), false);
 });
 
 /** Build a throwaway profile with two installed skins. */

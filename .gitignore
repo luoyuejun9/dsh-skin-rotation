@@ -12,6 +12,8 @@ node_modules/
 tools/profile-backup/
 tools/local-notes.md
 tools/git-api-push.mjs
+tools/pnpm-shim.sh
+
 
 # Logs
 *.log

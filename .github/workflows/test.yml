@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         node: ['20', '22', '24']
-    name: node ${{ matrix.node }}
+    name: test (node ${{ matrix.node }})
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -23,5 +23,21 @@ jobs:
       # only so the differential range test runs instead of skipping.
       - name: Install the SemVer test oracle
         run: npm install --no-save --no-audit --no-fund semver@7
+      - name: Syntax check
+        run: for file in lib/*.js tools/*.mjs; do node --check "$file"; done
       - name: Test
         run: node --test
+
+  package:
+    runs-on: ubuntu-latest
+    name: package tarball
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # Packs the real tarball, unpacks it, loads it from an isolated directory,
+      # and rejects repo-only files, absolute developer paths and missing entry
+      # points. Never publishes anything.
+      - name: Verify the npm tarball
+        run: node tools/verify-package.mjs

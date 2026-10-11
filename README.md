@@ -1,6 +1,6 @@
 <p align="center">
   <strong>dsh-skin-rotation</strong><br/>
-  <em>A different skin every launch — random skin rotation for DeepSeek Harness, with the switch where you expect it: inside Settings → Skins.</em>
+  <em>Smart skin rotation for DeepSeek Harness — random, sequential, weighted or fixed, with a per-skin pool, rotation history and crash-safe config writes. Local-first, recoverable, no extra API.</em>
 </p>
 
 <p align="center">
@@ -20,11 +20,29 @@
 
 You have four skins installed. You like all of them. You use one of them.
 
-`dsh-skin-rotation` picks a different one at random every time DeepSeek Harness starts, and puts a switch inside the **Skins** settings page to turn that off. It never shows the same skin twice in a row, it only picks skins the host can actually load, and it keeps its hands off everything else.
+`dsh-skin-rotation` applies **one rotation policy** on every launch of DeepSeek Harness and puts the controls inside the **Skins** settings page:
+
+| Policy | Behaviour |
+| --- | --- |
+| `random` | a different skin each launch, optionally never the last 2 or 3 |
+| `sequential` | walks your order, resuming at the right position after a restart |
+| `weighted` | probability by weight per skin (weights need not total 100) |
+| `fixed` | always one chosen skin — no automatic switching |
+
+Everything about it is inspectable and reversible: which skins are in the pool and why the others are not, what was rotated when and why, and the last successful rotation you can restore with one click.
 
 ```
 launch 1 → 深海女仆工坊      launch 2 → 虎鲸链路      launch 3 → 鲸鱼娘昼夜工坊
 ```
+
+### Beyond a random pick
+
+- **A real pool** — every installed skin is reported as `compatible`, `excluded`, `incompatible` or `unavailable`. Excluding a skin only removes it from rotation; installed files are never touched.
+- **Only loadable skins** — DSH silently refuses a plugin row whose `@deepseek-ai/dsh*` peer range excludes the running version, so a naive rotation can land on a skin that never starts. This plugin mirrors that admission check and honours the profile's `compatibility.json` grants.
+- **History you can read** — the last rotations with time, from → to, trigger (`startup` / `manual` / `restore`), mode and outcome. Failed rotations are recorded as failures; they never enter the "recent" set.
+- **Restore previous** — one click returns to the most recent successful skin that is still usable.
+- **Crash-safe writes** — a rotation edits two patch layers; a journal makes an interrupted write either finish or roll back on the next boot, and it refuses to overwrite files that changed in ways it cannot explain.
+- **Versioned state** — the state file carries a `schemaVersion` and migrates forward, so upgrades do not lose your preferences.
 
 ## Install
 
@@ -50,26 +68,31 @@ Restart once. Then open **Settings → Skins**: the rotation card sits at the bo
 
 > Installing into the desktop app instead of the web profile? Use `--profile desktop`. The plugin works in both.
 
-## The switch
+## The card
 
 ```
 Settings → Skins
 ├── Installed skins            ← the skin manager's own page
-│   ├── 官方默认
-│   ├── 深海女仆工坊  …
-│   └── …
 └── 🎲 Skin rotation           ← this plugin
-    ├── [switch] Rotate skins on launch      2 skins in the pool
-    ├── Current skin: 虎鲸链路 · Picked this launch: 虎鲸链路
-    ├── 深海女仆工坊   虎鲸链路   鲸鱼娘昼夜工坊   DeepSeek 云鲸纸面
-    └── [Shuffle now]  [Refresh]
+    ├── [switch] Rotate on launch        Mode: [random ▾]   Avoid recent: [last 2 ▾]
+    ├── Current skin: 虎鲸链路 · 2 in pool
+    ├── ☑ 虎鲸链路        · weight [3]
+    ├── ☐ 深海女仆工坊    (excluded)
+    ├── ☐ 不兼容皮肤      (incompatible — excluded)
+    ├── [Shuffle now] [Restore previous] [Refresh]
+    ├── Recent rotations
+    │     2026-10-11 21:04 · startup · official → 虎鲸链路 · ok
+    └── ▸ Advanced   (weights, reset to defaults)
 ```
 
 | Control | What it does |
 | --- | --- |
-| **Rotate skins on launch** | On: every launch picks a random skin. Off: the launch leaves the current skin alone. |
-| **Shuffle now** | Picks immediately and reloads the page. Works whether the switch is on or off. |
-| **Skin list** | Who is in the pool. Skins the running host would refuse are marked and excluded. |
+| **Rotate on launch** | Off means the launch leaves the current skin alone. `Shuffle now` still works. |
+| **Mode** | `random` / `sequential` / `weighted` / `fixed`. In `fixed` you pick the skin; nothing rotates automatically. |
+| **Avoid recent** | Prefers a skin that was not among the last 2 or 3 *successful* rotations. It is a preference, never a blocker: with nowhere fresh to go it still picks one and says so. |
+| **Skin checkboxes** | Pool membership. Unchecking is an exclusion, not an uninstall. Incompatible skins cannot be re-enabled. |
+| **Weights** | Shown in `weighted` mode. `0` removes a skin from the draw; an empty box means the default weight `1`. |
+| **Restore previous** | Returns to the most recent successful skin that is still in the pool, and records the restore in the history. |
 
 A manual switch in the skin manager still wins — until the next launch, which is the entire point.
 
@@ -109,6 +132,7 @@ HTTP surface: `GET/POST /api/dsh/skin-rotation` — same-origin only, cross-site
 - At least two installed skins for rotation to mean anything. Skins are read the way the ecosystem defines them: a package shipping a valid `skin.json` (`id`, `package`, `bodyAttr`, `wiring.id`).
 - The card lives inside the [skin manager](https://github.com/Small-tailqwq/dsh-deep-whale)'s Skins page (`settings.section` id `dsh-skins`). Without that manager rotation still works — you drive it through the route instead of a card.
 - No `@deepseek-ai/*` runtime dependency: nothing to resolve, nothing to build, no install-time scripts.
+- Windows and POSIX both work: writes go to a temp file plus rename, and the recovery journal is plain JSON.
 - Independently indexed by [dsh.so](https://www.dsh.so/artifact/dsh-skin-rotation/): security audit done (low risk), `L5` install verification — run tested on dsh `0.2.0-rc.2`.
 
 ## Development
@@ -136,6 +160,16 @@ The end-to-end script is the interesting one: it does not test the plugin's own 
 **What if I only have one skin?** Rotation is a no-op, and the block is still normalised.
 
 **Can I keep my current skin?** Turn the switch off. The launch then leaves the skin alone, and manual switching is unaffected.
+
+## Scope
+
+This plugin manages **rotation over the skins you already installed**: the pool, the policy, the history, and the reliability of the config write. It deliberately does not install, download, uninstall or preview skins, and it does not replace a skin manager or a market — those exist and this plugin works alongside them.
+
+## Roadmap
+
+- Rotation presets are saved and switchable today; a visual preset editor is not planned yet.
+- A rotation seed exists in the state file for reproducible runs; it is not exposed in the UI.
+- Session-scoped theming (a different skin per session) is **not** implemented: DSH has no public, stable per-session theme switch. It stays on the roadmap rather than being faked with DOM workarounds.
 
 ## License
 
